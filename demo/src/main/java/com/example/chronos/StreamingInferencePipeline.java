@@ -18,7 +18,7 @@ public class StreamingInferencePipeline {
        
         WriteAheadLog wal = new WriteAheadLog("benchmark-stream.log");
         LogConsumer consumer = new LogConsumer("benchmark-stream.log");
-        OnnxFraudDetector mlModel = new OnnxFraudDetector("demo/fraud_model.onnx");
+        OnnxFraudDetector mlModel = new OnnxFraudDetector();
 
         int totalEvents = 1_000_000; // 1 Million events for the benchmark
         long[] latencyMeasurementsNs = new long[totalEvents];

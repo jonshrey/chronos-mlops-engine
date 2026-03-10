@@ -21,7 +21,7 @@ public class ChronosService {
     public void init() throws Exception {
         wal = new WriteAheadLog("production-stream.log");
         consumer = new LogConsumer("production-stream.log");
-        mlModel = new OnnxFraudDetector("fraud_model.onnx");
+        mlModel = new OnnxFraudDetector();
 
         System.out.println("🚀 Chronos WAL and ML Engine Initialized.");
        

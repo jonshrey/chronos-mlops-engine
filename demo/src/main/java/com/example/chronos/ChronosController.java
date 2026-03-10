@@ -1,5 +1,8 @@
 package com.example.chronos;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -7,31 +10,52 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/inference")
+@RequestMapping("/api/inference") // Base path
 public class ChronosController {
 
     private final ChronosService chronosService;
+    private final OnnxFraudDetector detector; // Added so we can get the score for the UI
 
-    public ChronosController(ChronosService chronosService) {
+    public ChronosController(ChronosService chronosService, OnnxFraudDetector detector) {
         this.chronosService = chronosService;
+        this.detector = detector;
     }
 
-    // A simple DTO (Data Transfer Object) to map the incoming JSON
+    // Your existing DTO
     public static class TransactionRequest {
         public double[] features;
     }
 
-    @PostMapping("/score")
-    public ResponseEntity<String> scoreTransaction(@RequestBody TransactionRequest request) {
+    @PostMapping("/score") // Full path is /api/inference/score
+    public ResponseEntity<Map<String, Object>> scoreTransaction(@RequestBody TransactionRequest request) {
         try {
-            // Drop the data into our ultra-fast memory-mapped pipeline
+            // 1. Start the high-precision stopwatch
+            long startTime = System.nanoTime();
+
+            // 2. Ingest into the WAL (your original ultra-fast async architecture)
             chronosService.ingestTransaction(request.features);
            
-            // We immediately return "Accepted" so the user isn't kept waiting.
-            // The background thread handles the actual ML math in microseconds.
-            return ResponseEntity.accepted().body("Transaction ingested into Chronos WAL.");
+            // 3. For the UI Demo: Evaluate the model so we can send the result to React
+            boolean isAnomaly = detector.predict(request.features);
+            double score = isAnomaly ? 1.0 : 0.0;
+
+            // 4. Stop the stopwatch and convert to microseconds
+            long endTime = System.nanoTime();
+            long latencyMicros = (endTime - startTime) / 1000;
+
+            // 5. Build the JSON response expected by the Python script
+            Map<String, Object> response = new HashMap<>();
+            response.put("score", score);
+            response.put("latency_micros", latencyMicros);
+            response.put("message", "Transaction ingested into Chronos WAL.");
+
+            return ResponseEntity.ok(response);
+
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
         }
     }
 }
+

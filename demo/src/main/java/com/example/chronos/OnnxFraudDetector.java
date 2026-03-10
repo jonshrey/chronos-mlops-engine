@@ -1,29 +1,42 @@
 package com.example.chronos;
 
+import java.nio.FloatBuffer;
+import java.util.Collections;
+
+import org.springframework.stereotype.Component;
+
 import ai.onnxruntime.OnnxTensor;
 import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtSession;
-
-import java.nio.FloatBuffer;
-import java.util.Collections;
 
 /**
  * 100/10 MLOps Infrastructure:
  * Executes a pre-compiled ONNX model using the highly optimized C++ ONNX Runtime.
  */
+@Component
 public class OnnxFraudDetector {
     private final OrtEnvironment env;
     private final OrtSession session;
     private final double threshold = 0.5;
 
-    public OnnxFraudDetector(String modelPath) throws Exception {
-        // 1. Initialize the ONNX C++ Runtime Environment
-        this.env = OrtEnvironment.getEnvironment();
-       
-        // 2. Load the compiled machine learning model into memory
-        this.session = env.createSession(modelPath, new OrtSession.SessionOptions());
-        System.out.println("🧠 ONNX Runtime Initialized. Model loaded successfully.");
+public OnnxFraudDetector() throws Exception {
+
+    this.env = OrtEnvironment.getEnvironment();
+
+    var modelStream = getClass()
+            .getClassLoader()
+            .getResourceAsStream("fraud_model.onnx");
+
+    if (modelStream == null) {
+        throw new RuntimeException("fraud_model.onnx not found in resources");
     }
+
+    byte[] modelBytes = modelStream.readAllBytes();
+
+    this.session = env.createSession(modelBytes, new OrtSession.SessionOptions());
+
+    System.out.println("🧠 ONNX Runtime Initialized. Model loaded successfully.");
+}
 
     public boolean predict(double[] features) {
         try {
