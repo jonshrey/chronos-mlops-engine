@@ -26,7 +26,7 @@ def listen_to_binance():
                 "features": [trade["price"], trade["volume"]] + [0.0]*27
             }
             # Send to your Chronos Spring Boot API
-            res = requests.post("http://localhost:8080/api/inference/score", json=java_payload)
+            res = requests.post("http://backend:8080/api/inference/score", json=java_payload)
             score_data = res.json()
 
             print("RAW JAVA RESPONSE:", score_data) # Debugging line to see the raw response from Java
@@ -61,7 +61,7 @@ async def broadcast_to_ui(websocket, *args):
 async def main():
     print("🚀 Starting UI WebSocket Server on ws://localhost:8765...")
     # This correctly starts the websocket server inside an active event loop
-    async with websockets.serve(broadcast_to_ui, "localhost", 8765):
+    async with websockets.serve(broadcast_to_ui, "0.0.0.0", 8765):
         await asyncio.Future()  # This keeps the server running forever
 
 if __name__ == "__main__":
